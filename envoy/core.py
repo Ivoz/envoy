@@ -24,17 +24,20 @@ def _terminate_process(process):
     if sys.platform == 'win32':
         import ctypes
         PROCESS_TERMINATE = 1
-        handle = ctypes.windll.kernel32.OpenProcess(PROCESS_TERMINATE, False, process.pid)
+        handle = ctypes.windll.kernel32.OpenProcess(PROCESS_TERMINATE, False,
+                                                    process.pid)
         ctypes.windll.kernel32.TerminateProcess(handle, -1)
         ctypes.windll.kernel32.CloseHandle(handle)
     else:
         os.kill(process.pid, signal.SIGTERM)
 
+
 def _kill_process(process):
-   if sys.platform == 'win32':
-       _terminate_process(process)
-   else:
-       os.kill(process.pid, signal.SIGKILL)
+    if sys.platform == 'win32':
+        _terminate_process(process)
+    else:
+        os.kill(process.pid, signal.SIGKILL)
+
 
 def _is_alive(thread):
     if hasattr(thread, "is_alive"):
@@ -42,7 +45,9 @@ def _is_alive(thread):
     else:
         return thread.isAlive()
 
+
 class Command(object):
+
     def __init__(self, cmd):
         self.cmd = cmd
         self.process = None
@@ -58,9 +63,9 @@ class Command(object):
         environ.update(env or {})
 
         def target():
-
             try:
-                self.process = subprocess.Popen(self.cmd,
+                self.process = subprocess.Popen(
+                    self.cmd,
                     universal_newlines=True,
                     shell=False,
                     env=environ,
@@ -71,15 +76,9 @@ class Command(object):
                     cwd=cwd,
                 )
 
-                if sys.version_info[0] >= 3:
-                    self.out, self.err = self.process.communicate(
-                        input = bytes(self.data, "UTF-8") if self.data else None 
-                    )
-                else:
-                    self.out, self.err = self.process.communicate(self.data)
+                self.out, self.err = self.process.communicate(self.data)
             except Exception as exc:
                 self.exc = exc
-              
 
         thread = threading.Thread(target=target)
         thread.start()
@@ -87,7 +86,7 @@ class Command(object):
         thread.join(timeout)
         if self.exc:
             raise self.exc
-        if _is_alive(thread) :
+        if _is_alive(thread):
             _terminate_process(self.process)
             thread.join(kill_timeout)
             if _is_alive(thread):
@@ -98,17 +97,12 @@ class Command(object):
 
 
 class ConnectedCommand(object):
-    def __init__(self,
-        process=None,
-        std_in=None,
-        std_out=None,
-        std_err=None):
 
+    def __init__(self, process=None, std_in=None, std_out=None, std_err=None):
         self._process = process
-        self.std_in = std_in
-        self.std_out = std_out
-        self.std_err = std_out
-        self._status_code = None
+        self.std_in = std_in or process.stdin
+        self._std_out = std_out or ''
+        self._std_err = std_err or ''
 
     def __enter__(self):
         return self
@@ -117,11 +111,27 @@ class ConnectedCommand(object):
         self.kill()
 
     @property
+    def std_out(self):
+        if not self._process.stdout.closed:
+            out, err = self._process.communicate()
+            self._std_out += out
+            self._std_err += err
+        return self._std_out
+
+    @property
+    def std_err(self):
+        if not self._process.stderr.closed:
+            out, err = self._process.communicate()
+            self._std_out += out
+            self._std_err += err
+        return self._std_err
+
+    @property
     def status_code(self):
         """The status code of the process.
         If the code is None, assume that it's still running.
         """
-        return self._status_code
+        return self._process.poll()
 
     @property
     def pid(self):
@@ -143,23 +153,19 @@ class ConnectedCommand(object):
 
     def block(self):
         """Blocks until command finishes. Returns Response instance."""
-        self._status_code = self._process.wait()
-
+        self._process.wait()
 
 
 class Response(object):
     """A command's response"""
 
     def __init__(self, process=None):
-        super(Response, self).__init__()
-
         self._process = process
         self.command = None
         self.std_err = None
         self.std_out = None
         self.status_code = None
         self.history = []
-
 
     def __repr__(self):
         if len(self.command):
@@ -190,7 +196,8 @@ def expand_args(command):
     return command
 
 
-def run(command, data=None, timeout=None, kill_timeout=None, env=None, cwd=None):
+def run(command, data=None, timeout=None,
+        kill_timeout=None, env=None, cwd=None):
     """Executes a given commmand and returns Response.
 
     Blocks until process is complete, or timeout is reached.
@@ -231,7 +238,8 @@ def connect(command, data=None, env=None, cwd=None):
     environ = dict(os.environ)
     environ.update(env or {})
 
-    process = subprocess.Popen(command_str,
+    process = subprocess.Popen(
+        command_str,
         universal_newlines=True,
         shell=False,
         env=environ,
