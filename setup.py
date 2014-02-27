@@ -11,12 +11,9 @@ except ImportError:
     from distutils.core import setup
 
 
-
 if sys.argv[-1] == "publish":
     os.system("python setup.py sdist upload")
     sys.exit()
-
-required = []
 
 setup(
     name='envoy',
@@ -26,8 +23,7 @@ setup(
     author='Kenneth Reitz',
     author_email='me@kennethreitz.com',
     url='https://github.com/kennethreitz/envoy',
-    packages= ['envoy'],
-    install_requires=required,
+    packages=['envoy'],
     license='MIT',
     classifiers=(
         'Development Status :: 5 - Production/Stable',
@@ -38,7 +34,8 @@ setup(
         'Programming Language :: Python :: 2.5',
         'Programming Language :: Python :: 2.6',
         'Programming Language :: Python :: 2.7',
-        'Programming Language :: Python :: 3.0',
         'Programming Language :: Python :: 3.1',
+        'Programming Language :: Python :: 3.2',
+        'Programming Language :: Python :: 3.3',
     ),
 )
