@@ -23,7 +23,7 @@ class SimpleTest(unittest.TestCase):
     # THIS TEST FAILS BECAUSE expand_args DOESN'T HANDLE QUOTES PROPERLY
     def test_quoted_args(self):
         sentinel = 'quoted_args' * 3
-        r = envoy.run("python -c 'print \"%s\"'" % sentinel)
+        r = envoy.run("""python -c 'print("%s")'""" % sentinel)
         self.assertEqual(r.std_out.rstrip(), sentinel)
         self.assertEqual(r.status_code, 0)
 
@@ -40,14 +40,14 @@ class ConnectedCommandTests(unittest.TestCase):
         self.assertEqual(c.status_code, 0)
 
     def test_status_code_failure(self):
-        c = envoy.connect("sleeep 1")
-        self.assertEqual(c.status_code, 127)
+        c = envoy.connect("sleep -1")
+        self.assertNotEqual(c.status_code, 0)
 
     def test_input(self):
         test_string = 'asdfQWER'
         r = envoy.connect("cat | tr [:lower:] [:upper:]")
         r.send(test_string)
-        self.assertEqual(r.std_out, test_string.upper())
+        self.assertEqual(r.std_out.strip(), test_string.upper())
         self.assertEqual(r.status_code, 0)
 
 if __name__ == "__main__":
